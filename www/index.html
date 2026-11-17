@@ -203,6 +203,37 @@ header {
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
 .modal.show{display:flex}.modal-card{background:var(--panel);border:1px solid var(--green);border-radius:16px;padding:26px;max-width:340px;text-align:center;box-shadow:0 0 40px rgba(0,255,136,.25)}
 .modal-card h3{color:var(--green);margin-bottom:8px}.modal-card p{font-size:13px;margin-bottom:16px}
+
+/* ===== UX upgrade: touch-friendly, readable, phone + laptop ===== */
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);font-size:16px}
+.btn{min-height:48px;font-size:15px}
+.fld,.ip-input{min-height:48px;font-size:16px}
+.panel-title{font-size:13px}.panel-tag,.relay-badge,.gesture-arrow{font-size:11px}
+.stat-label,.ip-label,.gesture-sub,.relay-state,.gesture-desc-action,.hint,.log-entry,.vbox{font-size:12px}
+.gesture-desc-name,.relay-label{font-size:15px}
+.quick{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:1fr 1fr 130px;gap:10px;padding:8px 0 14px;background:linear-gradient(var(--bg) 82%,transparent)}
+.qbtn{min-height:68px;border-radius:14px;border:2px solid var(--border);background:var(--panel);color:var(--text);font-family:inherit;font-weight:700;font-size:17px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.qbtn small{font-size:12px;font-weight:700;letter-spacing:1px;color:var(--red)}
+.qbtn.on{border-color:var(--yellow);color:var(--yellow);background:rgba(255,204,0,.1);box-shadow:0 0 18px rgba(255,204,0,.25)}
+.qbtn.on small{color:var(--yellow)}
+.qbtn.alloff{border-color:var(--red);color:var(--red)}.qbtn.alloff small{color:var(--red)}
+.qbtn:active{transform:scale(.96)}
+.relay-row{cursor:pointer}.relay-row:hover{background:rgba(255,255,255,.03)}
+.fold .panel-header{cursor:pointer;min-height:48px}
+.fold .panel-title::after{content:' \25BE'}.fold.collapsed .panel-title::after{content:' \25B8'}
+.panel.collapsed>:not(.panel-header){display:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:600px){
+  .container{padding:10px 12px}
+  header{margin-bottom:8px;padding-bottom:10px}
+  .logo-text p,.logo-icon{display:none}
+  .status-pill{font-size:12px;padding:6px 12px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .gesture-display{padding:16px}.gesture-ring{width:76px;height:76px;font-size:36px;margin-bottom:10px}
+  .toast{top:calc(10px + env(safe-area-inset-top));max-width:92vw;white-space:normal;text-align:center}
+  .quick{grid-template-columns:1fr 1fr 84px}.qbtn{font-size:15px}
+}
+@media(min-width:921px){.sidebar{position:sticky;top:96px}}
 </style>
 </head>
 <body>
@@ -225,6 +256,12 @@ header {
       <div class="status-pill"><div class="dot inactive" id="netDot"></div><span id="netStatus">ESP32 OFFLINE</span></div>
     </div>
   </header>
+
+  <div class="quick">
+    <button class="qbtn off" id="qb1" onclick="toggleRelay(1)">💡 Relay 1<small id="qs1">OFF</small></button>
+    <button class="qbtn off" id="qb2" onclick="toggleRelay(2)">💡 Relay 2<small id="qs2">OFF</small></button>
+    <button class="qbtn alloff" onclick="allOff()">⏻<small>ALL OFF</small></button>
+  </div>
 
   <div class="main-grid">
 
@@ -256,7 +293,7 @@ header {
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel fold start-closed">
         <div class="panel-header">
           <span class="panel-title">System Log</span>
           <button class="btn" style="width:auto;padding:4px 10px;font-size:10px" onclick="clearLog()">CLEAR</button>
@@ -278,7 +315,7 @@ header {
 
       <div class="panel">
         <div class="panel-header"><span class="panel-title">Relay Status</span><span class="panel-tag">ESP32</span></div>
-        <div class="relay-row">
+        <div class="relay-row" onclick="toggleRelay(1)">
           <div class="relay-indicator off" id="relayBulb1">💡</div>
           <div class="relay-info">
             <div class="relay-label">Relay 1</div>
@@ -286,7 +323,7 @@ header {
           </div>
           <div class="relay-badge off" id="relayBadge1">LOW</div>
         </div>
-        <div class="relay-row">
+        <div class="relay-row" onclick="toggleRelay(2)">
           <div class="relay-indicator off" id="relayBulb2">💡</div>
           <div class="relay-info">
             <div class="relay-label">Relay 2</div>
@@ -296,7 +333,7 @@ header {
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel fold start-closed">
         <div class="panel-header"><span class="panel-title">Gesture Map</span></div>
         <div class="gesture-ref">
           <div class="gesture-item"><div class="gesture-emoji">🤚</div><div class="gesture-desc"><div class="gesture-desc-name">Open Palm</div><div class="gesture-desc-action">All 5 fingers extended</div></div><div class="gesture-arrow on">R1 ON</div></div>
@@ -316,7 +353,7 @@ header {
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" style="display:none">
         <div class="panel-header"><span class="panel-title">ESP32 Wi-Fi Setup</span><span class="panel-tag" id="staTag">ROUTER: —</span></div>
         <div class="ctrl-body">
           <div class="hint" style="margin:0 0 6px">First time: join the “GestureRelay” Wi-Fi (password 12345678), keep address 192.168.4.1, then pick your router here.</div>
@@ -328,13 +365,13 @@ header {
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel fold">
         <div class="panel-header"><span class="panel-title">ESP32 Link</span></div>
         <div class="ctrl-body">
           <div class="serial-status" id="netStatusBox">⚡ Not connected</div>
-          <div class="ip-label">ESP32 address (direct = 192.168.4.1 · router = its router IP)</div>
+          <div class="ip-label">ESP32 address (its fixed IP on your router)</div>
           <div class="ip-row">
-            <input class="ip-input" id="ipInput" value="192.168.4.1" placeholder="192.168.4.1" spellcheck="false">
+            <input class="ip-input" id="ipInput" value="192.168.1.50" placeholder="192.168.1.50" spellcheck="false">
             <button class="btn purple-btn" style="width:auto;padding:0 14px" onclick="testConnection()">PING</button></div><div class="row2" style="margin-top:6px"><button class="btn" onclick="autoFind()">🔍 Auto-find</button><button class="btn" onclick="useDirect()">Use 192.168.4.1</button>
           </div>
           <button class="btn danger" onclick="allOff()">⏻ All Relays OFF</button>
@@ -349,6 +386,9 @@ header {
 /* ═══════════════════════════════════════════════════════════════════
    HAND TRACKING — logic lifted from your arduino led .html
    ═══════════════════════════════════════════════════════════════════ */
+/* ★ SET THIS to the same fixed IP you set in the ESP32 firmware (FIXED_IP) */
+const FIXED_IP = '192.168.1.50';
+
 const video  = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
@@ -367,7 +407,7 @@ hands.setOptions({
 
 /* ── Landmark state (kept in sync with serial-like relay state) ── */
 let lastGesture = null;
-let espIP = localStorage.getItem('gr_esp_ip') || '192.168.4.1';
+let espIP = FIXED_IP;
 let espInfo = null;
 const relayState = { 1:false, 2:false };
 
@@ -568,8 +608,7 @@ async function testConnection() {
 }
 
 async function autoFind() {
-  const saved = localStorage.getItem('gr_router_ip');
-  const list = [...new Set([saved, '192.168.4.1', 'gesturerelay.local'].filter(Boolean))];
+  const list = [FIXED_IP];
   log('Auto-find: trying ' + list.join(', '), 'info');
   for (const ip of list) {
     try {
@@ -584,7 +623,7 @@ async function autoFind() {
   setNetUI(false, 'ESP32 OFFLINE'); showToast('ESP32 not found', 'off-toast');
 }
 function useDirect() {
-  espIP = '192.168.4.1'; localStorage.setItem('gr_esp_ip', espIP);
+  espIP = FIXED_IP; localStorage.setItem('gr_esp_ip', espIP);
   document.getElementById('ipInput').value = espIP; testConnection();
 }
 
@@ -594,6 +633,7 @@ async function allSet(on) {
   await espCommand('/all/' + (on ? 'on' : 'off'));
 }
 function allOff() { return allSet(false); }
+function toggleRelay(n) { return setRelay(n, !relayState[n], '👆 Tap'); }
 
 /* background status poll (keeps UI in sync with ESP32) */
 setInterval(async () => {
@@ -750,6 +790,8 @@ function setRelayUI(n, on) {
   const badge = document.getElementById('relayBadge' + n);
   const stat  = document.getElementById('statR' + n);
   const pin   = n === 1 ? '26' : '27';
+  document.getElementById('qb' + n).className = 'qbtn ' + (on ? 'on' : 'off');
+  document.getElementById('qs' + n).textContent = on ? 'ON' : 'OFF';
   const t = new Date().toTimeString().slice(0,8);
   if (on) {
     bulb.className = 'relay-indicator on';
@@ -815,9 +857,36 @@ setRelayUI(2, false);
 
 log('GestureRelay starting…', 'info');
 log('Gestures: 🖐️Palm=R1 ON · ✊Fist=R1 OFF · ☝Point=R2 ON · ✌️Peace=R2 OFF', '');
-log('First time: join Wi-Fi "GestureRelay", address 192.168.4.1, then use Wi-Fi Setup', '');
+/* Collapsible panels + keyboard shortcuts (laptop) */
+document.querySelectorAll('.fold .panel-header').forEach(h => h.addEventListener('click', e => {
+  if (e.target.closest('button')) return;
+  h.parentElement.classList.toggle('collapsed');
+}));
+document.querySelectorAll('.fold.start-closed').forEach(p => p.classList.add('collapsed'));
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === '1') toggleRelay(1); else if (k === '2') toggleRelay(2);
+  else if (k === '0') allOff(); else if (k === 'm') toggleVoice();
+});
+log('Keys: 1 / 2 toggle relays · 0 all off · M mic on/off', '');
+log('Phone must be on the same router Wi-Fi as the ESP32 (' + FIXED_IP + ')', '');
+
+/* Ask for camera + microphone permission as soon as the app opens */
+async function askPermissions() {
+  try {
+    const cam = await navigator.mediaDevices.getUserMedia({ video: true });
+    cam.getTracks().forEach(t => t.stop());
+  } catch (e) { log('Camera permission: ' + e.name, 'error'); }
+  try {
+    const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mic.getTracks().forEach(t => t.stop());
+  } catch (e) { log('Microphone permission: ' + e.name, 'error'); }
+  if (isNative) { try { await NativeSR.requestPermissions(); } catch (e) {} }
+}
+
 testConnection();
-main();
+askPermissions().then(main);
 </script>
 </body>
 </html>
